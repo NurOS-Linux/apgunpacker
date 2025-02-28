@@ -80,7 +80,7 @@ fn main() -> io::Result<()> {
     pb.set_style(ProgressStyle::default_bar()
         .template("\rUnpacking {prefix} [{bar:40}] {pos}%")
         .unwrap()
-        .progress_chars("█░"));
+        .progress_chars("= "));
 
     // Форматируем название пакета (обрезаем или дополняем пробелами)
     let prefix = format_name(&file_stem, 20);
