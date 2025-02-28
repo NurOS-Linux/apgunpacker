@@ -17,6 +17,19 @@ struct Args {
     output: String,
 }
 
+/// Функция, которая форматирует название пакета до 20 символов:
+/// - Если длиннее, обрезает и добавляет "...".
+/// - Если короче, добавляет пробелы справа для выравнивания.
+fn format_name(name: &str, max_len: usize) -> String {
+    let name_len = name.chars().count();
+    if name_len > max_len {
+        let truncated: String = name.chars().take(max_len - 3).collect();
+        format!("{}...", truncated)
+    } else {
+        format!("{:<max_len$}", name, max_len = max_len) // Дополняем пробелами
+    }
+}
+
 fn main() -> io::Result<()> {
     // Разбираем аргументы
     let args = Args::parse();
@@ -37,6 +50,12 @@ fn main() -> io::Result<()> {
         .or_else(|| file_name.strip_suffix(".apg"))
         .unwrap_or(&file_name)
         .into();
+
+    // Проверяем, поддерживается ли формат
+    if !file_name.ends_with(".tar.xz") && !file_name.ends_with(".tar.gz") && !file_name.ends_with(".apg") {
+        eprintln!("Ошибка: Формат '{}' не поддерживается!", file_name);
+        return Ok(());
+    }
 
     // Папка, куда будет распакован архив
     let extract_path = output_dir.join(&*file_stem);
@@ -59,11 +78,13 @@ fn main() -> io::Result<()> {
     // Настраиваем прогресс-бар
     let pb = ProgressBar::new(100);
     pb.set_style(ProgressStyle::default_bar()
-        .template("\rUnpacking {prefix} [{bar:40.green_bg/white}] {pos}%")
+        .template("\rUnpacking {prefix} [{bar:40}] {pos}%")
         .unwrap()
         .progress_chars("█░"));
 
-    pb.set_prefix(format!("{}", file_stem));
+    // Форматируем название пакета (обрезаем или дополняем пробелами)
+    let prefix = format_name(&file_stem, 20);
+    pb.set_prefix(prefix);
 
     // Распаковываем файлы с прогрессом
     let mut entries = archive.entries()?;
