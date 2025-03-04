@@ -45,14 +45,13 @@ fn main() -> io::Result<()> {
     // Получаем имя архива без расширения
     let file_name = archive_path.file_name().unwrap().to_string_lossy();
     let file_stem: Cow<str> = file_name
-        .strip_suffix(".tar.xz")
-        .or_else(|| file_name.strip_suffix(".tar.gz"))
-        .or_else(|| file_name.strip_suffix(".apg"))
+        .strip_suffix(".apg")
+        .or_else(|| file_name.strip_suffix(".tar.xz"))
         .unwrap_or(&file_name)
         .into();
 
     // Проверяем, поддерживается ли формат
-    if !file_name.ends_with(".tar.xz") && !file_name.ends_with(".tar.gz") && !file_name.ends_with(".apg") {
+    if !file_name.ends_with(".apg") && !file_name.ends_with(".tar.xz") {
         eprintln!("Ошибка: Формат '{}' не поддерживается!", file_name);
         return Ok(());
     }
