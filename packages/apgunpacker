@@ -26,43 +26,49 @@ metadata=load(open(path.join(temp_metadata_path,'metadata.json')))
 archive_name=metadata['name']
 archive_arch=metadata['architecture']
 if not archive_arch in['x86_64','aarch64','i386']:
-    log('Note: unknown architecture value detected, selecting other value... This package is not passed apgcheck!',Fore.YELLOW)
+    log(f'Note: unknown architecture value ({archive_arch}) detected, selecting other value... This package is not passed apgcheck!',Fore.YELLOW)
     if'amd'in archive_arch:archive_arch='x86_64'
     elif'x86'in archive_arch:archive_arch='i386'
-    elif'arm'in archive_arch:archive_arch='aarch64'
+    elif'arm' in archive_arch or'aarch'in archive_arch:archive_arch='aarch64'
     else:
         log('Failed to change architecture of package!',Fore.RED)
         exit(1)
-archive_version=metadata['version']
-package_path=path.join('packages',archive_name)
-package_arch_path=path.join(package_path,archive_arch)
-main_metadata_path=path.join(package_path,'metadata.json')
+from semver import compare
+def semver_fix(version):
+    if len(version.split('.'))!=3:version+='.0'
+    return version
+archive_version=semver_fix(metadata['version'])
+package_arch_path=path.join(archive_name,archive_arch)
+main_metadata_path=path.join(archive_name,'metadata.json')
 main_metadata_content:dict
 new_version_package_path=path.join(package_arch_path,archive_version+'.apg')
 from os import mkdir,replace
-from semver import compare
-if path.exists(package_path):
+if path.exists(archive_name):
     log('This package is exists in this server, checking...',Fore.CYAN)
-    main_metadata=open(main_metadata_path,'+')
+    main_metadata=open(main_metadata_path,'r')
     main_metadata_content=load(main_metadata)
+    main_metadata.close()
     if not archive_arch in main_metadata_content['architectures']:
         log('The package of new architecture will be added...',Fore.GREEN)
         mkdir(package_arch_path)
         main_metadata_content['architectures'].append(archive_arch)
-    if compare(archive_version,main_metadata_content['latest-version'])>0:
+    else:log('The package of this architecture is already added!',Fore.BLUE)
+    if compare(archive_version,semver_fix(main_metadata_content['latest-version']))>0:
         log('The package of newer version will be added...',Fore.GREEN)
         main_metadata_content['latest-version']=archive_version
         replace(archive_path,new_version_package_path)
-    main_metadata.write(str(main_metadata_content))
+    else:log('The package of this version is already added!',Fore.BLUE)
+    main_metadata=open(main_metadata_path,'w')
+    main_metadata.write(str(main_metadata_content).replace("'",'"'))
+    main_metadata.close()
 else:
     log('Adding a new package...',Fore.GREEN)
-    mkdir(package_path)
+    mkdir(archive_name)
     mkdir(package_arch_path)
     replace(archive_path,new_version_package_path)
     log('Parsing a main metadata...',Fore.GREEN)
     with open(main_metadata_path,'xt')as main_metadata:
-        main_metadata_content='{"architectures":["'+archive_arch+'"],"latest-version":"'+archive_version+'"}'
-        main_metadata.write(main_metadata_content)
+        main_metadata.write(str({"architectures":[archive_arch],"latest-version":archive_version}).replace("'",'"'))
         main_metadata.close()
 from shutil import rmtree
 rmtree(temp_metadata_path)
