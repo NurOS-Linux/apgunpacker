@@ -27,7 +27,7 @@ try:
 except Exception as e:log(f'Failed to extract metadata from package: {e} This package is not passed apgcheck!',Fore.RED)
 metadata:dict=load(open(path.join(temp_metadata_path,'metadata.json')))
 package_name,package_arch=metadata['name'],metadata['architecture']
-if not package_arch in['x86_64','aarch64','i386']:
+if not package_arch in['x86_64','aarch64']:
     log(f'Note: unknown architecture value ({package_arch}) detected, selecting other value... This package is not passed apgcheck!',Fore.YELLOW)
     if'amd'in package_arch:package_arch='x86_64'
     elif'x86'in package_arch:package_arch='i386'
